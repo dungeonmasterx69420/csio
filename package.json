@@ -1,6 +1,6 @@
 {
   "name": "csio-dashboard",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Self-hosted Counter-Strike tier-1 live dashboard with s1mple tracker — A Dungeon Production",
   "main": "server.js",
   "scripts": {
