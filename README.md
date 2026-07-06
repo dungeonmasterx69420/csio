@@ -6,6 +6,7 @@ Self-hosted CS2 dashboard focused on scheduling, live scores and watch links —
 
 - **Scene Wire ticker** — Cologne Major result, roster moves, upcoming circuit dates
 - **LIVE NOW zone** — every tier-1 match in play with series score and a ▶ Watch button (stream links straight from the feed, usually Twitch)
+- **FINAL SCORES zone** — every match that finished in the last 24 hours stays featured directly under the live games: final series score, winner highlighted, time since it ended, plus Stats (HLTV results) and VOD (Twitch channel videos) links
 - **GOAT WATCH — s1mple tracker** — BC.Game roster state, and his next match with opponent, event, live countdown and stream link the moment one is scheduled; flips to a LIVE state with score when he's playing
 - **Match Board** — HLTV-style rows grouped by day: time, teams, BO format, event, tier stars, watch link
 - **Recent Results** — hydrates from the feed; seeded with the Cologne Major playoff bracket
@@ -19,7 +20,7 @@ HLTV has no public API, so live data comes from **PandaScore**:
 1. Get a free key at https://pandascore.co (free tier is plenty — the server caches)
 2. Set it as `PANDASCORE_TOKEN` on the service
 
-Endpoints proxied server-side: `/csgo/matches/running`, `/csgo/matches/upcoming`, `/csgo/matches/past`. Caching: 60s while any match is live, 5 min idle, 45s error backoff, stale-serve on failure. Without a token (or if the provider is down) the API returns `{ source: 'none' }` and the frontend runs on its built-in snapshot (seeded **July 4, 2026**) — the page never breaks.
+Endpoints proxied server-side: `/csgo/matches/running`, `/csgo/matches/upcoming`, `/csgo/matches/past` (time-bounded with `range[end_at]` to the last 48h at `per_page=100`, so busy qualifier days can't push recent tier-1 results out of the window; falls back to the plain query if the provider rejects the param). Caching: 60s while any match is live, 5 min idle, 45s error backoff, stale-serve on failure. Without a token (or if the provider is down) the API returns `{ source: 'none' }` and the frontend runs on its built-in snapshot (seeded **July 4, 2026**) — the page never breaks.
 
 The frontend polls `/api/cs` every 60 seconds over relative paths (tunnel/proxy-safe, no WebSockets).
 

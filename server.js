@@ -59,6 +59,7 @@ function normMatch(m) {
   return {
     id: m.id,
     begin_at: m.begin_at || m.scheduled_at,
+    end_at: m.end_at || null,
     status: m.status === 'running' ? 'LIVE' : m.status === 'finished' ? 'FINISHED' : 'SCHEDULED',
     bo: m.number_of_games || null,
     event: [league, serie].filter(Boolean).join(' ').trim() || league || serie || 'CS2',
@@ -72,17 +73,41 @@ function normMatch(m) {
 const isBcg = m => m.teams.some(t => TEAM_RE.test(t.name) || TEAM_RE.test(t.acronym));
 const keep = m => isBcg(m) || TIERS.includes(m.tier);
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/* Past matches, time-bounded: range[end_at] pins the window to the last 48h so
+   a flood of low-tier qualifier matches can't push yesterday's tier-1 games out
+   of the page. Falls back to the plain query if the provider rejects the param. */
+async function psPast() {
+  const from = new Date(Date.now() - 2 * DAY_MS).toISOString();
+  const to = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+  try {
+    return await ps(`/csgo/matches/past?per_page=100&sort=-end_at&range[end_at]=${from},${to}`);
+  } catch (err) {
+    console.warn('[csio] range[end_at] query failed (' + err.message + ') — falling back to plain past query');
+    return ps('/csgo/matches/past?per_page=100&sort=-end_at');
+  }
+}
+
 async function build() {
   if (!PS_TOKEN) throw new Error('no PANDASCORE_TOKEN set');
   const [running, upcoming, past] = await Promise.all([
     ps('/csgo/matches/running?per_page=50'),
     ps('/csgo/matches/upcoming?per_page=100&sort=begin_at'),
-    ps('/csgo/matches/past?per_page=50&sort=-end_at')
+    psPast()
   ]);
 
   const live = running.map(normMatch).filter(keep);
   const next = upcoming.map(normMatch).filter(keep).slice(0, 40);
-  const results = past.map(normMatch).filter(keep).slice(0, 20);
+  const finished = past.map(normMatch).filter(keep);
+
+  // Featured "Final Scores" strip — everything that ended within the last 24h
+  const recent = finished
+    .filter(m => Date.now() - new Date(m.end_at || m.begin_at) < DAY_MS)
+    .sort((a, b) => new Date(b.end_at || b.begin_at) - new Date(a.end_at || a.begin_at))
+    .slice(0, 12);
+
+  const results = finished.slice(0, 20);
 
   // s1mple / BC.Game tracker — searched across ALL fetched matches (pre tier filter)
   const all = [...running, ...upcoming, ...past].map(normMatch);
@@ -95,7 +120,7 @@ async function build() {
                .sort((a, b) => new Date(b.begin_at) - new Date(a.begin_at)).slice(0, 3)
   };
 
-  return { source: 'pandascore', fetchedAt: new Date().toISOString(), live, upcoming: next, results, s1mple };
+  return { source: 'pandascore', fetchedAt: new Date().toISOString(), live, upcoming: next, recent, results, s1mple };
 }
 
 app.get('/api/cs', async (req, res) => {
