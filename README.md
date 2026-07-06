@@ -6,10 +6,9 @@ Self-hosted CS2 dashboard focused on scheduling, live scores and watch links —
 
 - **Scene Wire ticker** — Cologne Major result, roster moves, upcoming circuit dates
 - **LIVE NOW zone** — every tier-1 match in play with series score and a ▶ Watch button (stream links straight from the feed, usually Twitch)
-- **FINAL SCORES zone** — every match that finished in the last 24 hours stays featured directly under the live games: final series score, winner highlighted, time since it ended, plus Stats (HLTV results) and VOD (Twitch channel videos) links
 - **GOAT WATCH — s1mple tracker** — BC.Game roster state, and his next match with opponent, event, live countdown and stream link the moment one is scheduled; flips to a LIVE state with score when he's playing
 - **Match Board** — HLTV-style rows grouped by day: time, teams, BO format, event, tier stars, watch link
-- **Recent Results** — hydrates from the feed; seeded with the Cologne Major playoff bracket
+- **Recent Results** — hydrates from the feed (48h window) with per-match **Stats · HLTV** and **VOD** (Twitch channel videos) links; seeded with the Cologne Major playoff bracket
 - **Tier 1 Calendar** — every big event from BLAST Bounty (Jul 20) through the PGL Singapore Major (Nov 25 – Dec 13), with Twitch channel links for the known broadcasters
 - **Dungeon strip** — recruitment CTA to enterdungeon.cc
 

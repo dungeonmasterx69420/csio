@@ -99,15 +99,7 @@ async function build() {
 
   const live = running.map(normMatch).filter(keep);
   const next = upcoming.map(normMatch).filter(keep).slice(0, 40);
-  const finished = past.map(normMatch).filter(keep);
-
-  // Featured "Final Scores" strip — everything that ended within the last 24h
-  const recent = finished
-    .filter(m => Date.now() - new Date(m.end_at || m.begin_at) < DAY_MS)
-    .sort((a, b) => new Date(b.end_at || b.begin_at) - new Date(a.end_at || a.begin_at))
-    .slice(0, 12);
-
-  const results = finished.slice(0, 20);
+  const results = past.map(normMatch).filter(keep).slice(0, 20);
 
   // s1mple / BC.Game tracker — searched across ALL fetched matches (pre tier filter)
   const all = [...running, ...upcoming, ...past].map(normMatch);
@@ -120,7 +112,7 @@ async function build() {
                .sort((a, b) => new Date(b.begin_at) - new Date(a.begin_at)).slice(0, 3)
   };
 
-  return { source: 'pandascore', fetchedAt: new Date().toISOString(), live, upcoming: next, recent, results, s1mple };
+  return { source: 'pandascore', fetchedAt: new Date().toISOString(), live, upcoming: next, results, s1mple };
 }
 
 app.get('/api/cs', async (req, res) => {

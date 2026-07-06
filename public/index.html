@@ -96,19 +96,6 @@ section{padding:34px 0 6px}
   text-transform:uppercase;font-size:14px;padding:10px 20px;border-radius:6px;white-space:nowrap}
 .btn-live:hover{background:#c9463c;text-decoration:none}
 
-/* ---------- FINAL zone (finished < 24h) ---------- */
-#finzone{display:none}
-#finzone.on{display:block}
-.fin-card{border:1px solid #4a3c1e;border-radius:var(--radius);background:linear-gradient(165deg,#1A1409,#12100C);
-  display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;padding:16px 20px}
-.fin-badge{font-family:var(--disp);font-weight:800;letter-spacing:.18em;font-size:13px;color:var(--gold);
-  text-transform:uppercase;display:flex;flex-direction:column;gap:3px}
-.fin-badge .ago{font-family:var(--body);font-weight:500;font-size:11.5px;letter-spacing:.03em;color:var(--faint);text-transform:none}
-.fin-card .sc{color:var(--gold)}
-.fin-card .tn.win{color:var(--orange)}
-.fin-card .tn.lose{color:var(--faint)}
-.fin-links{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-
 /* ---------- s1mple spotlight ---------- */
 .goat{border:1px solid var(--orange-deep);border-radius:var(--radius);overflow:hidden;
   background:linear-gradient(155deg,#20160B,#12100C)}
@@ -181,6 +168,9 @@ section{padding:34px 0 6px}
 .res .rw .n{font-family:var(--disp);font-weight:700;font-size:17px;text-transform:uppercase}
 .res .rw .n.win{color:var(--orange)}
 .res .rw .s{font-family:var(--disp);font-weight:800;font-size:18px}
+.res .res-links{display:flex;gap:14px;margin-top:9px;padding-top:8px;border-top:1px solid var(--line-soft)}
+.res .res-links a{font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.res .res-links a:hover{color:var(--orange);text-decoration:none}
 
 /* ---------- dungeon strip / footer ---------- */
 .dstrip{margin:44px 0 0;border:1px solid #3d4c28;border-radius:var(--radius);
@@ -206,9 +196,6 @@ footer a{color:var(--dim)}
   .logo-mark{width:46px;height:46px}
   .masthead{align-items:flex-start;flex-direction:column}
   .live-card{grid-template-columns:1fr;text-align:center}
-  .fin-card{grid-template-columns:1fr;text-align:center}
-  .fin-badge{align-items:center}
-  .fin-links{justify-content:center}
 }
 </style>
 </head>
@@ -257,12 +244,6 @@ footer a{color:var(--dim)}
 <section id="livezone" class="wrap">
   <div class="sec-head"><h2>Live <em>Now</em></h2><div class="note">tier 1 matches in play</div></div>
   <div class="live-list" id="livelist"></div>
-</section>
-
-<!-- ============ just finished (last 24h) ============ -->
-<section id="finzone" class="wrap">
-  <div class="sec-head"><h2>Final <em>Scores</em></h2><div class="note">finished in the last 24 hours</div></div>
-  <div class="live-list" id="finlist"></div>
 </section>
 
 <!-- ============ s1mple spotlight ============ -->
@@ -400,15 +381,22 @@ function renderResultsSnapshot(){
 }
 function renderResultsLive(list){
   if (!list || !list.length) return;
-  $('results').innerHTML = list.slice(0, 9).map(m => `
+  $('results').innerHTML = list.slice(0, 9).map(m => {
+    const tw = m.stream && /twitch\.tv\/([^\/?#]+)/i.exec(m.stream);
+    return `
     <div class="res">
-      <div class="ev"><span>${m.event}</span><span>${fmtDate(m.begin_at)}</span></div>
+      <div class="ev"><span>${m.event}</span><span>${fmtDate(m.end_at || m.begin_at)}</span></div>
       ${m.teams.map(t => {
         const other = m.teams.find(x => x !== t);
         const w = t.score != null && other && other.score != null && t.score > other.score;
         return `<div class="rw"><span class="n ${w?'win':''}">${t.name}</span><span class="s">${t.score != null ? t.score : ''}</span></div>`;
       }).join('')}
-    </div>`).join('');
+      <div class="res-links">
+        <a href="https://www.hltv.org/results" target="_blank" rel="noopener">Stats · HLTV</a>
+        ${tw ? `<a href="https://www.twitch.tv/${tw[1]}/videos" target="_blank" rel="noopener">VOD</a>` : ''}
+      </div>
+    </div>`;
+  }).join('');
   $('res-note').textContent = 'live from the feed';
 }
 
@@ -482,39 +470,6 @@ function renderLive(list){
   $('chip').classList.add('live');
 }
 
-/* ---------- just finished (last 24h) ---------- */
-const agoTxt = iso => {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso)) / 6e4));
-  if (mins < 60) return 'just ended';
-  const h = Math.floor(mins / 60);
-  return h + (h === 1 ? ' hour ago' : ' hours ago');
-};
-function renderFinished(list){
-  const zone = $('finzone');
-  const fresh = (list || []).filter(m => Date.now() - new Date(m.end_at || m.begin_at) < 864e5);
-  if (!fresh.length){ zone.classList.remove('on'); return; }
-  zone.classList.add('on');
-  $('finlist').innerHTML = fresh.map(m => {
-    const [a, b] = m.teams;
-    const aw = (a.score ?? 0) > (b.score ?? 0), bw = (b.score ?? 0) > (a.score ?? 0);
-    const tw = m.stream && /twitch\.tv\/([^\/?#]+)/i.exec(m.stream);
-    return `
-    <div class="fin-card">
-      <div class="fin-badge">FINAL${m.bo ? ' · BO' + m.bo : ''}<span class="ago">${agoTxt(m.end_at || m.begin_at)}</span></div>
-      <div class="live-mid">
-        <span class="tn ${aw ? 'win' : bw ? 'lose' : ''}">${a.name}</span>
-        <span class="sc">${a.score ?? 0} : ${b.score ?? 0}</span>
-        <span class="tn ${bw ? 'win' : aw ? 'lose' : ''}">${b.name}</span>
-        <span class="ev">${m.event}${isBcgM(m) ? ' · ⭑ s1mple' : ''}</span>
-      </div>
-      <div class="fin-links">
-        <a class="btn-w" href="https://www.hltv.org/results" target="_blank" rel="noopener">Stats · HLTV</a>
-        ${tw ? `<a class="btn-w" href="https://www.twitch.tv/${tw[1]}/videos" target="_blank" rel="noopener">VOD</a>` : ''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
 /* ---------- s1mple card ---------- */
 let goatTarget = null;
 function renderGoat(s){
@@ -564,7 +519,6 @@ async function refresh(){
     const j = await r.json();
     if (j.source === 'none') throw new Error('no provider');
     renderLive(j.live);
-    renderFinished(j.recent);
     renderBoard(j.upcoming, j.live);
     renderResultsLive(j.results);
     renderGoat(j.s1mple);
