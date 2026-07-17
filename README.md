@@ -12,6 +12,11 @@ Self-hosted CS2 dashboard focused on scheduling, live scores and watch links —
 - **Tier 1 Calendar** — every big event from BLAST Bounty (Jul 20) through the PGL Singapore Major (Nov 25 – Dec 13), with Twitch channel links for the known broadcasters
 - **Dungeon strip** — recruitment CTA to enterdungeon.cc
 
+CSIO is a **PWA** (same treatment as YARDIO) — installable to the home screen, with an
+offline-capable app shell and last-loaded scores served from cache when the network drops
+(`manifest.webmanifest` + `sw.js`: network-first for navigations and `/api/*`, cache-first
+for fonts and images).
+
 ## Data source
 
 HLTV has no public API, so live data comes from **PandaScore**:
